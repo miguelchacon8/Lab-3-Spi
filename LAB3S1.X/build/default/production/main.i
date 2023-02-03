@@ -2758,40 +2758,17 @@ void setup(void);
 
 
 void __attribute__((picinterrupt(("")))) isr(void){
-
-
- if (RBIF == 1){
-    if (PORTBbits.RB0 == 0)
-    {
-        _delay((unsigned long)((30)*(4000000/4000.0)));
-        if (PORTBbits.RB0 == 1){
-            contador++;
-            INTCONbits.RBIF = 0;
-        }
-    }
-    else if (PORTBbits.RB1 == 0){
-        _delay((unsigned long)((30)*(4000000/4000.0)));
-        if (PORTBbits.RB1 == 1){
-            contador--;
-            INTCONbits.RBIF = 0;
-  }
-    }
-    }
-
+# 74 "main.c"
     if(PIR1bits.ADIF){
         if(ADCON0bits.CHS == 0){
             lecADC = ADRESH;
+            PORTD = ADRESH;
         }
         ADIF = 0;
     }
-
+# 93 "main.c"
     if(SSPIF == 1){
-        if (check == 'A'){
-            spiWrite(lecADC);
-        }
-        else if (check == 'B'){
-            spiWrite(lecADC);
-        }
+        spiWrite(lecADC);
         SSPIF = 0;
     }
 }
@@ -2806,10 +2783,10 @@ void main(void) {
 
 
     while(1){
-        check = spiRead();
+
         ADC_read(0);
 
-        _delay((unsigned long)((250)*(4000000/4000.0)));
+        _delay((unsigned long)((20)*(4000000/4000.0)));
     }
     return;
 }
@@ -2821,13 +2798,17 @@ void setup(void){
     ANSELH = 0;
 
 
-    TRISB = 0;
+    TRISB = 0b00000011;
     TRISD = 0;
 
     PORTB = 0;
     PORTD = 0;
 
+
+
+
     INTCONbits.GIE = 1;
+# 142 "main.c"
     INTCONbits.PEIE = 1;
     PIR1bits.SSPIF = 0;
     PIE1bits.SSPIE = 1;

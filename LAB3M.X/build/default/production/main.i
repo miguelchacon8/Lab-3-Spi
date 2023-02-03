@@ -3019,6 +3019,7 @@ uint8_t V1 = 0;
 uint8_t V2 = 0;
 
 unsigned int VOLT1 = 0;
+unsigned int VOLT2 = 0;
 
 
 unsigned int u1 = 0;
@@ -3047,19 +3048,26 @@ void main(void) {
         setup();
         PORTCbits.RC1 = 0;
         _delay((unsigned long)((1)*(4000000/4000.0)));
-        spiWrite("A");
+        spiWrite(PORTB);
         V1 = spiRead();
+
         VOLT1 = map(V1, 0, 255, 1, 200);
         calculovolt();
         valorLCD();
-
-        spiWrite("B");
-        cont = spiRead();
-
         _delay((unsigned long)((1)*(4000000/4000.0)));
         PORTCbits.RC1 = 1;
 
+        PORTCbits.RC2 = 0;
+        _delay((unsigned long)((1)*(4000000/4000.0)));
+        spiWrite(PORTB);
+        V2 = spiRead();
 
+        VOLT2 = map(V2, 0, 255, 1, 200);
+        calculovolt();
+        valorLCD();
+        _delay((unsigned long)((1)*(4000000/4000.0)));
+        PORTCbits.RC2 = 1;
+# 113 "main.c"
     }
 }
 
@@ -3068,7 +3076,7 @@ void main(void) {
 void setup(void){
 
     ANSELH = 0;
-    TRISB = 0b00000011;
+    TRISB = 0;
     TRISA = 0;
     TRISCbits.TRISC1 = 0;
     TRISCbits.TRISC2 = 0;
@@ -3082,7 +3090,7 @@ void setup(void){
     PORTE = 0;
 
     PORTCbits.RC1 = 1;
-
+    PORTCbits.RC2 = 1;
     spiInit(SPI_MASTER_OSC_DIV4, SPI_DATA_SAMPLE_MIDDLE, SPI_CLOCK_IDLE_LOW, SPI_IDLE_2_ACTIVE);
     _delay((unsigned long)((10)*(4000000/4000.0)));
 }
@@ -3100,6 +3108,17 @@ void valorLCD(void){
     sprintf(buffer, "%u", d1);
     Lcd_Write_String(buffer);
 
+    Lcd_Set_Cursor(2,12);
+    sprintf(buffer, "%u", u2);
+    Lcd_Write_String(buffer);
+
+    Lcd_Set_Cursor(2,13);
+    Lcd_Write_String(".");
+
+    Lcd_Set_Cursor(2,14);
+    sprintf(buffer, "%u", d2);
+    Lcd_Write_String(buffer);
+
     Lcd_Set_Cursor(2,7);
     sprintf(buffer, "%u", cont);
     Lcd_Write_String(buffer);
@@ -3110,6 +3129,6 @@ void valorLCD(void){
 void calculovolt(void){
     u1 = VOLT1/40;
     d1 = VOLT1%40;
-
-
+    u2 = VOLT2/40;
+    d2 = VOLT2%40;
 }

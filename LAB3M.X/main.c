@@ -50,6 +50,7 @@ uint8_t V1 = 0;
 uint8_t V2 = 0;
 
 unsigned int VOLT1 = 0;
+unsigned int VOLT2 = 0;
 
 
 unsigned int u1 = 0;
@@ -78,17 +79,35 @@ void main(void) {
         setup();
         PORTCbits.RC1 = 0;       //Slave Select
         __delay_ms(1);  
-        spiWrite("A");
+        spiWrite(PORTB);
         V1 = spiRead();
+
         VOLT1 = map(V1, 0, 255, 1, 200); //se mapea el valor 
         calculovolt();
         valorLCD();
-        
-        spiWrite("B");
-        cont = spiRead();
-
         __delay_ms(1);
         PORTCbits.RC1 = 1;       //Slave Deselect 
+        
+        PORTCbits.RC2 = 0;       //Slave Select
+        __delay_ms(1);  
+        spiWrite(PORTB);
+        V2 = spiRead();
+
+        VOLT2 = map(V2, 0, 255, 1, 200); //se mapea el valor 
+        calculovolt();
+        valorLCD();
+        __delay_ms(1);
+        PORTCbits.RC2 = 1;       //Slave Deselect 
+
+        
+        
+//        PORTCbits.RC1 = 0;       //Slave Select
+//        __delay_ms(1);  
+//        spiWrite("B");
+//        cont = spiRead();
+//
+//        __delay_ms(1);
+//        PORTCbits.RC1 = 1;       //Slave Deselect 
 
 
     }
@@ -99,7 +118,7 @@ void main(void) {
 void setup(void){
     //PUERTOS
     ANSELH = 0;
-    TRISB = 0b00000011;
+    TRISB = 0;
     TRISA = 0;
     TRISCbits.TRISC1 = 0;
     TRISCbits.TRISC2 = 0;
@@ -113,7 +132,7 @@ void setup(void){
     PORTE = 0;
     
     PORTCbits.RC1 = 1; //S 1
-    //PORTCbits.RC2 = 1; // S 2
+    PORTCbits.RC2 = 1; // S 2
     spiInit(SPI_MASTER_OSC_DIV4, SPI_DATA_SAMPLE_MIDDLE, SPI_CLOCK_IDLE_LOW, SPI_IDLE_2_ACTIVE);
     __delay_ms(10);
 }
@@ -131,6 +150,17 @@ void valorLCD(void){
     sprintf(buffer, "%u", d1);  //ESCRIBO decena V1
     Lcd_Write_String(buffer);
     
+    Lcd_Set_Cursor(2,12);
+    sprintf(buffer, "%u", u2); //ESCRIBO unidad V1
+    Lcd_Write_String(buffer);
+
+    Lcd_Set_Cursor(2,13);
+    Lcd_Write_String(".");
+    
+    Lcd_Set_Cursor(2,14);
+    sprintf(buffer, "%u", d2);  //ESCRIBO decena V1
+    Lcd_Write_String(buffer);
+    
     Lcd_Set_Cursor(2,7);
     sprintf(buffer, "%u", cont);  //escribo contador
     Lcd_Write_String(buffer);
@@ -141,8 +171,8 @@ void valorLCD(void){
 void calculovolt(void){
     u1 = VOLT1/40; 
     d1 = VOLT1%40;
-    //u2 = VOLT2/40;
-    //d2 = VOLT2%40;
+    u2 = VOLT2/40;
+    d2 = VOLT2%40;
 }
 
 //

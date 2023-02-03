@@ -50,38 +50,48 @@ void setup(void);
 void __interrupt() isr(void){
     
     //LECTURA DE LOS BOTONES
-	if (RBIF == 1){
-    if (PORTBbits.RB0 == 0)
-    {
-        __delay_ms(30);
-        if (PORTBbits.RB0 == 1){ //incremento el puerto
-            contador++;
-            INTCONbits.RBIF = 0;
-        }
-    }
-    else if (PORTBbits.RB1 == 0){
-        __delay_ms(30);
-        if (PORTBbits.RB1 == 1){
-            contador--;            //decremento el puerto
-            INTCONbits.RBIF = 0;
-		}
-    }
-    } 
+//	if (RBIF == 1){
+//        //check = spiRead();
+//    if (PORTBbits.RB0 == 0)
+//    {
+//        __delay_ms(10);
+//        if (PORTBbits.RB0 == 1){ //incremento el puerto
+//            contador++;
+//            PORTD = contador;
+//            INTCONbits.RBIF = 0;
+//        }
+//    }
+//    else if (PORTBbits.RB1 == 0){
+//        __delay_ms(10);
+//        if (PORTBbits.RB1 == 1){
+//            contador--; 
+//            PORTD = contador;//decremento el puerto
+//            INTCONbits.RBIF = 0;
+//		}
+//    }
+//    } 
    
     if(PIR1bits.ADIF){
         if(ADCON0bits.CHS == 0){
             lecADC = ADRESH;
+            PORTD = ADRESH;
         }
         ADIF = 0;                   // Apaga la bandera del ADC
     }
+//    
+//    if(SSPIF == 1){
+//        check = spiRead();
+//        if (check == 'A'){
+//            spiWrite(lecADC);
+//        }
+//        else if (check == 'B'){
+//            spiWrite(contador);
+//        }
+//        SSPIF = 0;
+//    }
     
     if(SSPIF == 1){
-        if (check == 'A'){
-            spiWrite(lecADC);
-        }
-        else if (check == 'B'){
-            spiWrite(lecADC);
-        }
+        spiWrite(lecADC);
         SSPIF = 0;
     }
 }
@@ -96,10 +106,10 @@ void main(void) {
     // Loop infinito
     //*************************************************************************
     while(1){
-        check = spiRead();
+        //check = spiRead();
         ADC_read(0);
         //PORTD = ADRESH;
-        __delay_ms(250);
+        __delay_ms(20);
     }
     return;
 }
@@ -111,13 +121,24 @@ void setup(void){
     ANSELH = 0;
     
     
-    TRISB = 0;
+    TRISB = 0b00000011;
     TRISD = 0;
     
     PORTB = 0;
     PORTD = 0;
     
-    INTCONbits.GIE = 1;         // Habilitamos interrupciones
+    //Interrupciones
+    //INTCONbits.RBIE = 1; 
+    //INTCONbits.RBIF = 0;
+    INTCONbits.GIE = 1; //interrupciones globales
+    
+//    WPUBbits.WPUB0 = 1; //inputs
+//    WPUBbits.WPUB1 = 1;
+//    IOCBbits.IOCB0 = 1; //inputs
+//    IOCBbits.IOCB1 = 1;
+//    
+//    OPTION_REGbits.nRBPU = 0; //no RBPU, habilitan los pullups internos
+    
     INTCONbits.PEIE = 1;        // Habilitamos interrupciones PEIE
     PIR1bits.SSPIF = 0;         // Borramos bandera interrupción MSSP
     PIE1bits.SSPIE = 1;         // Habilitamos interrupción MSSP
