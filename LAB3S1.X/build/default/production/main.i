@@ -11,7 +11,7 @@
 
 
 
-#pragma config FOSC = EXTRC_NOCLKOUT
+#pragma config FOSC = INTRC_NOCLKOUT
 #pragma config WDTE = OFF
 #pragma config PWRTE = OFF
 #pragma config MCLRE = OFF
@@ -2718,7 +2718,7 @@ char spiRead();
 
 
 void ADC_config(int channel);
-void ADC_read(int channel);
+int ADC_read(uint8_t channel);
 # 30 "main.c" 2
 
 # 1 "./oscilador.h" 1
@@ -2744,7 +2744,7 @@ void setupINTOSC(uint8_t IRCF);
 
 
 
-uint8_t temporal = 0;
+uint8_t check = 0;
 uint8_t lecADC;
 uint8_t check;
 
@@ -2758,19 +2758,49 @@ void setup(void);
 
 
 void __attribute__((picinterrupt(("")))) isr(void){
-# 74 "main.c"
-    if(PIR1bits.ADIF){
-        if(ADCON0bits.CHS == 0){
-            lecADC = ADRESH;
-            PORTD = ADRESH;
+
+
+    if(PIR1bits.SSPIF){
+        check = SSPBUF;
+        _delay((unsigned long)((5)*(4000000/4000.0)));
+        if (check == 1){
+            SSPBUF = contador;
+
         }
-        ADIF = 0;
+        else if (check == 0){
+            lecADC = ADC_read(0);
+            SSPBUF = lecADC;
+
+        }
+        PIR1bits.SSPIF = 0;
+
     }
-# 93 "main.c"
-    if(SSPIF == 1){
-        spiWrite(lecADC);
-        SSPIF = 0;
+
+
+ if (INTCONbits.RBIF == 1){
+
+    if (PORTBbits.RB0 == 0)
+    {
+        _delay((unsigned long)((3)*(4000000/4000.0)));
+        if (PORTBbits.RB0 == 1){
+            contador++;
+            PORTD = contador;
+            INTCONbits.RBIF = 0;
+        }
     }
+    else if (PORTBbits.RB1 == 0){
+        _delay((unsigned long)((3)*(4000000/4000.0)));
+        if (PORTBbits.RB1 == 1){
+            contador--;
+            PORTD = contador;
+            INTCONbits.RBIF = 0;
+  }
+    }
+
+    INTCONbits.RBIF = 0;
+    }
+
+
 }
 
 
@@ -2779,14 +2809,13 @@ void main(void) {
     setup();
     ADC_config(0x01);
     setupINTOSC(6);
+    lecADC = 0;
+    check = 0;
 
 
 
     while(1){
-
-        ADC_read(0);
-
-        _delay((unsigned long)((20)*(4000000/4000.0)));
+        ;
     }
     return;
 }
@@ -2805,10 +2834,17 @@ void setup(void){
     PORTD = 0;
 
 
-
-
+    INTCONbits.RBIE = 1;
+    INTCONbits.RBIF = 0;
     INTCONbits.GIE = 1;
-# 142 "main.c"
+
+    WPUBbits.WPUB0 = 1;
+    WPUBbits.WPUB1 = 1;
+    IOCBbits.IOCB0 = 1;
+    IOCBbits.IOCB1 = 1;
+
+    OPTION_REGbits.nRBPU = 0;
+
     INTCONbits.PEIE = 1;
     PIR1bits.SSPIF = 0;
     PIE1bits.SSPIE = 1;

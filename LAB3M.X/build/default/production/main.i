@@ -3011,10 +3011,6 @@ void setup(void);
 void valorLCD(void);
 void calculovolt(void);
 
-
-char voltaje1[3];
-char voltaje2[3];
-char contador[3];
 uint8_t V1 = 0;
 uint8_t V2 = 0;
 
@@ -3031,6 +3027,27 @@ unsigned int cont = 0;
 
 char buffer[20];
 
+void __attribute__((picinterrupt(("")))) isr (void){
+
+    if (PIR1bits.SSPIF){
+        PIR1bits.SSPIF = 0;
+    }
+
+
+    if (PIR1bits.TXIF){
+        PIR1bits.TXIF = 0;
+    }
+
+
+    if (PIR1bits.RCIF){
+        PIR1bits.RCIF = 0;
+    }
+
+
+    if (INTCONbits.RBIF){
+        INTCONbits.RBIF = 0;
+    }
+}
 
 
 
@@ -3045,29 +3062,54 @@ void main(void) {
 
 
     while(1){
-        setup();
+
+
+        PORTCbits.RC1 = 1;
+        _delay((unsigned long)((10)*(4000000/4000.0)));
         PORTCbits.RC1 = 0;
-        _delay((unsigned long)((1)*(4000000/4000.0)));
-        spiWrite(PORTB);
-        V1 = spiRead();
+
+        SSPBUF = 0;
+        while(!SSPSTATbits.BF){
+        ;
+        }
+        cont = SSPBUF;
+        _delay((unsigned long)((10)*(4000000/4000.0)));
+
+
+
+        PORTCbits.RC1 = 1;
+        _delay((unsigned long)((10)*(4000000/4000.0)));
+        PORTCbits.RC1 = 0;
+        SSPBUF = 1;
+
+        while(!SSPSTATbits.BF){}
+        V1 = SSPBUF;
+        _delay((unsigned long)((10)*(4000000/4000.0)));
+
+
+        PORTCbits.RC1 = 1;
+        _delay((unsigned long)((10)*(4000000/4000.0)));
+        PORTCbits.RC2 = 1;
+        _delay((unsigned long)((10)*(4000000/4000.0)));
+        PORTCbits.RC2 = 0;
+
+        SSPBUF = 0;
+
+        while(!SSPSTATbits.BF){}
+        V2 = SSPBUF;
+        PORTCbits.RC2 = 1;
+        _delay((unsigned long)((2)*(4000000/4000.0)));
+
+
 
         VOLT1 = map(V1, 0, 255, 1, 200);
         calculovolt();
         valorLCD();
-        _delay((unsigned long)((1)*(4000000/4000.0)));
-        PORTCbits.RC1 = 1;
-
-        PORTCbits.RC2 = 0;
-        _delay((unsigned long)((1)*(4000000/4000.0)));
-        spiWrite(PORTB);
-        V2 = spiRead();
 
         VOLT2 = map(V2, 0, 255, 1, 200);
         calculovolt();
         valorLCD();
-        _delay((unsigned long)((1)*(4000000/4000.0)));
-        PORTCbits.RC2 = 1;
-# 113 "main.c"
+        _delay((unsigned long)((2)*(4000000/4000.0)));
     }
 }
 
@@ -3089,8 +3131,14 @@ void setup(void){
     PORTD = 0;
     PORTE = 0;
 
-    PORTCbits.RC1 = 1;
-    PORTCbits.RC2 = 1;
+
+    INTCONbits.GIE = 0;
+    INTCONbits.PEIE = 0;
+    PIE1bits.SSPIE = 0;
+    PIE1bits.ADIE = 0;
+
+    PORTCbits.RC1 = 0;
+    PORTCbits.RC2 = 0;
     spiInit(SPI_MASTER_OSC_DIV4, SPI_DATA_SAMPLE_MIDDLE, SPI_CLOCK_IDLE_LOW, SPI_IDLE_2_ACTIVE);
     _delay((unsigned long)((10)*(4000000/4000.0)));
 }

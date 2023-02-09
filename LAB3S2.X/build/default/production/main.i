@@ -11,7 +11,7 @@
 
 
 
-#pragma config FOSC = EXTRC_NOCLKOUT
+#pragma config FOSC = INTRC_NOCLKOUT
 #pragma config WDTE = OFF
 #pragma config PWRTE = OFF
 #pragma config MCLRE = OFF
@@ -2718,7 +2718,7 @@ char spiRead();
 
 
 void ADC_config(int channel);
-void ADC_read(int channel);
+int ADC_read(uint8_t channel);
 # 30 "main.c" 2
 
 # 1 "./oscilador.h" 1
@@ -2744,7 +2744,7 @@ void setupINTOSC(uint8_t IRCF);
 
 
 
-uint8_t temporal = 0;
+uint8_t check = 0;
 uint8_t lecADC;
 
 
@@ -2759,18 +2759,15 @@ void setup(void);
 void __attribute__((picinterrupt(("")))) isr(void){
 
 
-    if(PIR1bits.ADIF){
-        if(ADCON0bits.CHS == 0){
-            lecADC = ADRESH;
-            PORTD = ADRESH;
-        }
-        ADIF = 0;
-    }
 
     if(SSPIF == 1){
-        spiWrite(lecADC);
+        check = SSPBUF;
+        _delay((unsigned long)((5)*(4000000/4000.0)));
+        lecADC = ADC_read(0);
+        SSPBUF = lecADC;
+        }
+
         SSPIF = 0;
-    }
 }
 
 
@@ -2783,9 +2780,7 @@ void main(void) {
 
 
     while(1){
-        ADC_read(0);
-
-        _delay((unsigned long)((20)*(4000000/4000.0)));
+        ;
     }
     return;
 }

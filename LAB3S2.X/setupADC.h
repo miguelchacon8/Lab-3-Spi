@@ -18,7 +18,7 @@
 // TODO Insert declarations
 
 void ADC_config(int channel);
-void ADC_read(int channel);
+int ADC_read(uint8_t channel);
 
 
 #endif	/* XC_HEADER_TEMPLATE_H */

@@ -42,10 +42,6 @@ void setup(void);
 void valorLCD(void);
 void calculovolt(void);
 
-
-char voltaje1[3];
-char voltaje2[3];
-char contador[3];
 uint8_t V1 = 0;
 uint8_t V2 = 0;
 
@@ -62,6 +58,27 @@ unsigned int cont = 0;
 //VARIABLES PARA LCD
 char buffer[20];
 
+void __interrupt() isr (void){  
+    //Interrupción que indica que una Transmisión/Recepción SPI ha tomado lugar
+    if (PIR1bits.SSPIF){
+        PIR1bits.SSPIF = 0;
+    }
+    
+    //Interrupción de Envío
+    if (PIR1bits.TXIF){
+        PIR1bits.TXIF = 0;
+    }
+    
+    //Interrupción de Recepción
+    if (PIR1bits.RCIF){
+        PIR1bits.RCIF = 0;
+    }
+    
+        //Interrupción del Puerto B 
+    if (INTCONbits.RBIF){ 
+        INTCONbits.RBIF = 0;
+    }
+}
 //******************************************************************************
 // Código Principal
 //******************************************************************************
@@ -72,44 +89,58 @@ void main(void) {
     __delay_us(100);
     Lcd_Clear();
     Lcd_Set_Cursor(1,1);
-    Lcd_Write_String("S1:    S2:   S3:");
+    Lcd_Write_String("S1:    S2:   CON:");
 
     
     while(1){
-        setup();
+        
+        //CONTADOR
+        PORTCbits.RC1 = 1;
+        __delay_ms(10); 
         PORTCbits.RC1 = 0;       //Slave Select
-        __delay_ms(1);  
-        spiWrite(PORTB);
-        V1 = spiRead();
+        
+        SSPBUF = 0;
+        while(!SSPSTATbits.BF){
+        ;
+        }
+        cont = SSPBUF;            // Se obtiene el valor del contador
+        __delay_ms(10);
+        
+        
+        //VOLTAJE 1
+        PORTCbits.RC1 = 1;
+        __delay_ms(10); 
+        PORTCbits.RC1 = 0;       //Slave Select
+        SSPBUF = 1;
+        
+        while(!SSPSTATbits.BF){} 
+        V1 = SSPBUF;
+        __delay_ms(10);
+        
+        //VOLTAJE2
+        PORTCbits.RC1 = 1;
+        __delay_ms(10); 
+        PORTCbits.RC2 = 1;       //Slave deselect
+        __delay_ms(10);  
+        PORTCbits.RC2 = 0;       //Slave Select
+        
+        SSPBUF = 0;
+        
+        while(!SSPSTATbits.BF){} 
+        V2 = SSPBUF;
+        PORTCbits.RC2 = 1; 
+        __delay_ms(2);
 
+        
+        //CONVERSIONES DE VALORES
         VOLT1 = map(V1, 0, 255, 1, 200); //se mapea el valor 
         calculovolt();
         valorLCD();
-        __delay_ms(1);
-        PORTCbits.RC1 = 1;       //Slave Deselect 
         
-        PORTCbits.RC2 = 0;       //Slave Select
-        __delay_ms(1);  
-        spiWrite(PORTB);
-        V2 = spiRead();
-
         VOLT2 = map(V2, 0, 255, 1, 200); //se mapea el valor 
         calculovolt();
         valorLCD();
-        __delay_ms(1);
-        PORTCbits.RC2 = 1;       //Slave Deselect 
-
-        
-        
-//        PORTCbits.RC1 = 0;       //Slave Select
-//        __delay_ms(1);  
-//        spiWrite("B");
-//        cont = spiRead();
-//
-//        __delay_ms(1);
-//        PORTCbits.RC1 = 1;       //Slave Deselect 
-
-
+        __delay_ms(2);
     }
 }
 //******************************************************************************
@@ -131,8 +162,14 @@ void setup(void){
     PORTD = 0;
     PORTE = 0;
     
-    PORTCbits.RC1 = 1; //S 1
-    PORTCbits.RC2 = 1; // S 2
+    //INTERRUPCION
+    INTCONbits.GIE = 0;             // Se habilitan las interrupciones globales
+    INTCONbits.PEIE = 0;            // Se habilitan interrupciones de perifericos
+    PIE1bits.SSPIE = 0;             // Se habilita la interrupción del SPI
+    PIE1bits.ADIE = 0;              // Se habilita la interrupción del ADC
+    
+    PORTCbits.RC1 = 0; //S 1
+    PORTCbits.RC2 = 0; // S 2
     spiInit(SPI_MASTER_OSC_DIV4, SPI_DATA_SAMPLE_MIDDLE, SPI_CLOCK_IDLE_LOW, SPI_IDLE_2_ACTIVE);
     __delay_ms(10);
 }

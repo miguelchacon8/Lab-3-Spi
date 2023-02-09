@@ -2642,7 +2642,7 @@ extern __bank0 __bit __timeout;
 
 
 void ADC_config(int channel);
-void ADC_read(int channel);
+int ADC_read(uint8_t channel);
 # 9 "setupADC.c" 2
 
 
@@ -2677,22 +2677,25 @@ void ADC_config(int channel){
     ADCON1bits.ADFM = 0;
 
     ADCON0bits.ADON = 1;
-    _delay((unsigned long)((100)*(1000000/4000000.0)));
+    _delay((unsigned long)((100)*(4000000/4000000.0)));
 }
-void ADC_read(int channel){
+int ADC_read(uint8_t channel){
     if(channel ==0){
         ADCON0bits.CHS = 0b0000;
-        _delay((unsigned long)((100)*(1000000/4000000.0)));
+        _delay((unsigned long)((100)*(4000000/4000000.0)));
         ADCON0bits.GO = 1;
+        while(ADIF==0){;}
+        return ADRESH;
+
     }
     if(channel ==1){
         ADCON0bits.CHS = 0b0001;
-        _delay((unsigned long)((100)*(1000000/4000000.0)));
+        _delay((unsigned long)((100)*(4000000/4000000.0)));
         ADCON0bits.GO = 1;
     }
     if(channel ==2){
         ADCON0bits.CHS = 0b0010;
-        _delay((unsigned long)((100)*(1000000/4000000.0)));
+        _delay((unsigned long)((100)*(4000000/4000000.0)));
         ADCON0bits.GO = 1;
     }
 }

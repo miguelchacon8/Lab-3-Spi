@@ -2,7 +2,7 @@
 
 
 // CONFIG1
-#pragma config FOSC = EXTRC_NOCLKOUT// Oscillator Selection bits (RCIO oscillator: I/O function on RA6/OSC2/CLKOUT pin, RC on RA7/OSC1/CLKIN)
+#pragma config FOSC = INTRC_NOCLKOUT// Oscillator Selection bits (RCIO oscillator: I/O function on RA6/OSC2/CLKOUT pin, RC on RA7/OSC1/CLKIN)
 #pragma config WDTE = OFF       // Watchdog Timer Enable bit (WDT disabled and can be enabled by SWDTEN bit of the WDTCON register)
 #pragma config PWRTE = OFF      // Power-up Timer Enable bit (PWRT disabled)
 #pragma config MCLRE = OFF      // RE3/MCLR pin function select bit (RE3/MCLR pin function is digital input, MCLR internally tied to VDD)
@@ -34,7 +34,7 @@
 //*****************************************************************************
 #define _XTAL_FREQ 4000000
 
-uint8_t temporal = 0;
+uint8_t check = 0;
 uint8_t lecADC;
 uint8_t check;
 
@@ -48,52 +48,49 @@ void setup(void);
 // Código de Interrupción 
 //*****************************************************************************
 void __interrupt() isr(void){
+    //INTERRUPCION DEL SPI
+    //if (PIR1bits.SSPIF){
+    if(PIR1bits.SSPIF){
+        check = SSPBUF;  //cargamos el valor clean para limpiar
+        __delay_ms(5);
+        if (check == 1){
+            SSPBUF = contador;
+            //PORTD = contador;
+        }
+        else if (check == 0){
+            lecADC = ADC_read(0);
+            SSPBUF = lecADC;
+            //PORTD = lecADC;
+        }
+        PIR1bits.SSPIF = 0;
+        //SSPIF = 0;
+    }
     
     //LECTURA DE LOS BOTONES
-//	if (RBIF == 1){
-//        //check = spiRead();
-//    if (PORTBbits.RB0 == 0)
-//    {
-//        __delay_ms(10);
-//        if (PORTBbits.RB0 == 1){ //incremento el puerto
-//            contador++;
-//            PORTD = contador;
-//            INTCONbits.RBIF = 0;
-//        }
-//    }
-//    else if (PORTBbits.RB1 == 0){
-//        __delay_ms(10);
-//        if (PORTBbits.RB1 == 1){
-//            contador--; 
-//            PORTD = contador;//decremento el puerto
-//            INTCONbits.RBIF = 0;
-//		}
-//    }
-//    } 
-   
-    if(PIR1bits.ADIF){
-        if(ADCON0bits.CHS == 0){
-            lecADC = ADRESH;
-            PORTD = ADRESH;
+	if (INTCONbits.RBIF == 1){
+        //check = spiRead();
+    if (PORTBbits.RB0 == 0)
+    {
+        __delay_ms(3);
+        if (PORTBbits.RB0 == 1){ //incremento el puerto
+            contador++;
+            PORTD = contador;
+            INTCONbits.RBIF = 0;
         }
-        ADIF = 0;                   // Apaga la bandera del ADC
     }
-//    
-//    if(SSPIF == 1){
-//        check = spiRead();
-//        if (check == 'A'){
-//            spiWrite(lecADC);
-//        }
-//        else if (check == 'B'){
-//            spiWrite(contador);
-//        }
-//        SSPIF = 0;
-//    }
+    else if (PORTBbits.RB1 == 0){
+        __delay_ms(3);
+        if (PORTBbits.RB1 == 1){
+            contador--; 
+            PORTD = contador;
+            INTCONbits.RBIF = 0;
+		}
+    }
     
-    if(SSPIF == 1){
-        spiWrite(lecADC);
-        SSPIF = 0;
-    }
+    INTCONbits.RBIF = 0;
+    } 
+
+
 }
 //*****************************************************************************
 // Código Principal
@@ -102,14 +99,13 @@ void main(void) {
     setup();
     ADC_config(0x01);
     setupINTOSC(6);
+    lecADC = 0;
+    check = 0;
     //*************************************************************************
     // Loop infinito
     //*************************************************************************
     while(1){
-        //check = spiRead();
-        ADC_read(0);
-        //PORTD = ADRESH;
-        __delay_ms(20);
+        ;
     }
     return;
 }
@@ -128,16 +124,16 @@ void setup(void){
     PORTD = 0;
     
     //Interrupciones
-    //INTCONbits.RBIE = 1; 
-    //INTCONbits.RBIF = 0;
+    INTCONbits.RBIE = 1; 
+    INTCONbits.RBIF = 0;
     INTCONbits.GIE = 1; //interrupciones globales
     
-//    WPUBbits.WPUB0 = 1; //inputs
-//    WPUBbits.WPUB1 = 1;
-//    IOCBbits.IOCB0 = 1; //inputs
-//    IOCBbits.IOCB1 = 1;
-//    
-//    OPTION_REGbits.nRBPU = 0; //no RBPU, habilitan los pullups internos
+    WPUBbits.WPUB0 = 1; //inputs
+    WPUBbits.WPUB1 = 1;
+    IOCBbits.IOCB0 = 1; //inputs
+    IOCBbits.IOCB1 = 1;
+    
+    OPTION_REGbits.nRBPU = 0; //no RBPU, habilitan los pullups internos
     
     INTCONbits.PEIE = 1;        // Habilitamos interrupciones PEIE
     PIR1bits.SSPIF = 0;         // Borramos bandera interrupción MSSP

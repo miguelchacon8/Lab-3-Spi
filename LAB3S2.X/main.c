@@ -2,7 +2,7 @@
 
 
 // CONFIG1
-#pragma config FOSC = EXTRC_NOCLKOUT// Oscillator Selection bits (RCIO oscillator: I/O function on RA6/OSC2/CLKOUT pin, RC on RA7/OSC1/CLKIN)
+#pragma config FOSC = INTRC_NOCLKOUT// Oscillator Selection bits (RCIO oscillator: I/O function on RA6/OSC2/CLKOUT pin, RC on RA7/OSC1/CLKIN)
 #pragma config WDTE = OFF       // Watchdog Timer Enable bit (WDT disabled and can be enabled by SWDTEN bit of the WDTCON register)
 #pragma config PWRTE = OFF      // Power-up Timer Enable bit (PWRT disabled)
 #pragma config MCLRE = OFF      // RE3/MCLR pin function select bit (RE3/MCLR pin function is digital input, MCLR internally tied to VDD)
@@ -34,7 +34,7 @@
 //*****************************************************************************
 #define _XTAL_FREQ 4000000
 
-uint8_t temporal = 0;
+uint8_t check = 0;
 uint8_t lecADC;
 
 
@@ -47,20 +47,17 @@ void setup(void);
 // Código de Interrupción 
 //*****************************************************************************
 void __interrupt() isr(void){
-    
-   
-    if(PIR1bits.ADIF){
-        if(ADCON0bits.CHS == 0){
-            lecADC = ADRESH;
-            PORTD = ADRESH;
-        }
-        ADIF = 0;                   // Apaga la bandera del ADC
-    }
-    
+
+    //INTERRUPCION DEL SPI
+    //if (PIR1bits.SSPIF){
     if(SSPIF == 1){
-        spiWrite(lecADC);
+        check = SSPBUF;  //cargamos el valor clean para limpiar
+        __delay_ms(5);
+        lecADC = ADC_read(0);
+        SSPBUF = lecADC;
+        }
+        //PIR1bits.SSPIF = 0;
         SSPIF = 0;
-    }
 }
 //*****************************************************************************
 // Código Principal
@@ -73,9 +70,7 @@ void main(void) {
     // Loop infinito
     //*************************************************************************
     while(1){
-        ADC_read(0);
-        
-        __delay_ms(20);
+        ;
     }
     return;
 }
